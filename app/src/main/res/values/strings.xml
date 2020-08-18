@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">github-explorer-android</string>
+    <string name="app_name">Github Account Explorer</string>
+    <string name="text_search_hint">Enter Github Account Name</string>
+    <string name="text_search">Search</string>
+    <string name="text_no_data_title">Whoops!</string>
+    <string name="text_no_data_desc">Sorry, but nothing matched your search. Please try another keyword.</string>
 </resources>
