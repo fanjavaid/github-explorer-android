@@ -1,5 +1,6 @@
 package com.fanjavaid.github_explorer_android.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.*
 import com.fanjavaid.github_explorer_android.data.model.Account
 import com.fanjavaid.github_explorer_android.usecases.GetAccountsByNameUseCase
@@ -11,18 +12,26 @@ import kotlinx.coroutines.launch
 class GetAccountViewModel(
     private val getAccountsByNameUseCase: GetAccountsByNameUseCase
 ) : ViewModel() {
-    private val name = MutableLiveData<String>()
+    private val searchQuery = MutableLiveData<SearchQuery>()
 
-    val accounts: LiveData<List<Account>> = name.switchMap {
+    val accounts: LiveData<List<Account>> = searchQuery.switchMap { query ->
         val results = MutableLiveData<List<Account>>()
         viewModelScope.launch {
-            results.value = getAccountsByNameUseCase.getAccounts(name.value ?: "")
+            val result = getAccountsByNameUseCase.getAccounts(query.name, query.page)
+            results.value = result
         }
         results
     }
 
-    fun searchGithubAccount(name: String) = this.name.postValue(name)
+    fun searchGithubAccount(searchQuery: SearchQuery) {
+        this.searchQuery.postValue(searchQuery)
+    }
 }
+
+data class SearchQuery(
+    var name: String,
+    var page: Int
+)
 
 @Suppress("UNCHECKED_CAST")
 class GetAccountViewModelFactory(private val getAccountsByNameUseCase: GetAccountsByNameUseCase) :
