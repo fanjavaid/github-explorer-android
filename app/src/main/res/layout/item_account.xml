@@ -3,13 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="@dimen/size_8dp"
-    android:layout_marginBottom="@dimen/size_8dp">
+    android:padding="@dimen/size_16dp">
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/ivAvatar"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         tools:src="@tools:sample/avatars" />
@@ -21,7 +20,7 @@
         android:layout_marginStart="@dimen/size_16dp"
         android:layout_toEndOf="@id/ivAvatar"
         android:gravity="center_vertical"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle1"
         tools:text="Fandi Akhmad" />
 
     <com.google.android.material.textview.MaterialTextView
@@ -32,7 +31,7 @@
         android:layout_toEndOf="@id/ivAvatar"
         android:gravity="center_vertical"
         android:layout_below="@id/tvName"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Body1"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Caption"
         tools:text="DKI Jakarta, Indonesia" />
 
 </RelativeLayout>
