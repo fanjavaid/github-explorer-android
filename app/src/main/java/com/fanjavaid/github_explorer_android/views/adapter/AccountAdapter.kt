@@ -52,8 +52,9 @@ class AccountAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
 fun ImageView.setImageResourceUrl(url: String) {
     Glide.with(this)
-        .load(url.isBlank())
+        .load(url)
         .error(R.drawable.shape_circle_gray)
+        .placeholder(R.drawable.shape_circle_gray)
         .circleCrop()
         .into(this)
 }
