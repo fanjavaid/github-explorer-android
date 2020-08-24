@@ -4,23 +4,27 @@ import android.os.Bundle
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.inputmethod.EditorInfo
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.fanjavaid.github_explorer_android.R
+import com.fanjavaid.github_explorer_android.data.AccountRepository
+import com.fanjavaid.github_explorer_android.data.local.AccountDao
+import com.fanjavaid.github_explorer_android.data.local.GithubExplorerDatabase
+import com.fanjavaid.github_explorer_android.data.local.AccountLocalRepositoryImpl
 import com.fanjavaid.github_explorer_android.data.model.Account
-import com.fanjavaid.github_explorer_android.data.repository.AccountRemoteRepositoryImpl
-import com.fanjavaid.github_explorer_android.data.repository.AccountRepository
-import com.fanjavaid.github_explorer_android.usecases.GetAccountsByNameUseCase
-import com.fanjavaid.github_explorer_android.usecases.GetAccountsByNameUseCaseImpl
+import com.fanjavaid.github_explorer_android.data.network.AccountRemoteRepositoryImpl
+import com.fanjavaid.github_explorer_android.usecases.*
 import com.fanjavaid.github_explorer_android.viewmodels.GetAccountViewModel
 import com.fanjavaid.github_explorer_android.viewmodels.GetAccountViewModelFactory
 import com.fanjavaid.github_explorer_android.viewmodels.SearchQuery
 import com.fanjavaid.github_explorer_android.views.adapter.AccountAdapter
 import com.fanjavaid.github_explorer_android.views.utils.AndroidUtils
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlin.properties.Delegates.observable
 
 /**
@@ -32,8 +36,19 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
 
     // ViewModel
     private lateinit var viewModel: GetAccountViewModel
+
+    // Repositories
     private lateinit var accountRepository: AccountRepository
+    private lateinit var accountLocalRepository: AccountRepository
+
+    // Use Cases
+    private lateinit var getAccountsUseCase: GetAccountsUseCase
     private lateinit var getAccountsByNameUseCase: GetAccountsByNameUseCase
+    private lateinit var saveAccountsUseCase: SaveAccountsUseCase
+    private lateinit var deleteAccountsUseCase: DeleteAccountsUseCase
+
+    // Local
+    private lateinit var accountDao: AccountDao
 
     private var endlessScrollListener = EndlessScrollListener()
     private var isLoading: Boolean by observable(false) { _, _, newValue ->
@@ -44,8 +59,13 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         initListAdapter()
+        initDao()
+        initRepositories()
+        initUseCases()
         initViewModel()
+        observerCachedAccounts()
         observeAccounts()
     }
 
@@ -72,8 +92,8 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
         btnSearch.setOnClickListener {
             search()
         }
-        etSearch.setOnEditorActionListener { v, actionId, event ->
-            return@setOnEditorActionListener when(actionId) {
+        etSearch.setOnEditorActionListener { _, actionId, _ ->
+            return@setOnEditorActionListener when (actionId) {
                 EditorInfo.IME_ACTION_SEARCH -> {
                     search()
                     true
@@ -83,10 +103,13 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
         }
     }
 
+    private fun initDao() {
+        accountDao = GithubExplorerDatabase.getDatabase(this).getAccountDao()
+    }
+
     private fun initListAdapter() {
         accountAdapter = AccountAdapter()
         rvResults.apply {
-            setHasFixedSize(true)
             adapter = accountAdapter
             layoutManager = LinearLayoutManager(this@MainActivity)
             addOnScrollListener(endlessScrollListener.apply {
@@ -95,31 +118,62 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
         }
     }
 
-    private fun initViewModel() {
+    private fun initRepositories() {
+        accountLocalRepository = AccountLocalRepositoryImpl(accountDao)
         accountRepository = AccountRemoteRepositoryImpl()
+    }
+
+    private fun initUseCases() {
+        // local
+        saveAccountsUseCase = SaveLocalAccountUseCaseImpl(accountLocalRepository)
+        deleteAccountsUseCase = DeleteLocalAccountsUseCaseImpl(accountLocalRepository)
+        getAccountsUseCase = GetLocalAccountsUseCaseImpl(accountLocalRepository)
+
+        // network
         getAccountsByNameUseCase = GetAccountsByNameUseCaseImpl(accountRepository)
+    }
+
+    private fun initViewModel() {
         viewModel = ViewModelProvider(
             this,
-            GetAccountViewModelFactory(getAccountsByNameUseCase)
+            GetAccountViewModelFactory(getAccountsUseCase, getAccountsByNameUseCase)
         ).get(GetAccountViewModel::class.java)
     }
 
     private fun observeAccounts() {
         viewModel.accounts.observe(this@MainActivity, Observer {
-            Toast.makeText(
-                this@MainActivity,
-                "Data exists? ${!it.isNullOrEmpty()}",
-                Toast.LENGTH_SHORT
-            ).show()
+            if (!it.isNullOrEmpty()) {
+                GlobalScope.launch {
+                    saveAccountsUseCase.saveAccounts(it)
+                }
+            }
+
             hideLoading()
             render(it)
         })
     }
 
+    private fun observerCachedAccounts() {
+        viewModel.cachedAccounts.observe(this, Observer { data ->
+            if (!data.isNullOrEmpty()) {
+                accountAdapter.accounts = data.toMutableList()
+                accountAdapter.notifyDataSetChanged()
+            }
+        })
+    }
+
     fun search() {
+        // Update UI
         AndroidUtils.hideKeyboard(etSearch)
         showLoading()
-        accountAdapter.accounts = mutableListOf()
+
+        // Reset state
+        accountAdapter.accounts.clear()
+        GlobalScope.launch(Dispatchers.Main) {
+            deleteAccountsUseCase.deleteAccounts()
+        }
+
+        // Start new search
         viewModel.searchGithubAccount(SearchQuery(etSearch.text.toString(), 1))
     }
 

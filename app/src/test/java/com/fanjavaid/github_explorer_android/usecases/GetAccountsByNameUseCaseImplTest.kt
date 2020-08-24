@@ -1,7 +1,9 @@
 package com.fanjavaid.github_explorer_android.usecases
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.fanjavaid.github_explorer_android.data.model.Account
-import com.fanjavaid.github_explorer_android.data.repository.AccountRepository
+import com.fanjavaid.github_explorer_android.data.AccountRepository
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -17,13 +19,34 @@ class GetAccountsByNameUseCaseImplTest {
     @Before
     fun setUp() {
         mockRepository = object : AccountRepository {
-            override suspend fun getAccountByName(name: String): List<Account> {
-                return List(5){ mockk<Account>()}
+
+            override fun getAccounts(): LiveData<List<Account>?> = MutableLiveData()
+
+            override suspend fun getAccountByName(
+                name: String,
+                page: Int,
+                limit: Int
+            ): List<Account>? = List(5) { mockk<Account>() }
+
+            override suspend fun saveAccounts(accounts: List<Account>) {
+            }
+
+            override suspend fun deletedAccounts() {
             }
         }
         mockEmptyRepository = object : AccountRepository {
-            override suspend fun getAccountByName(name: String): List<Account> {
-                return emptyList()
+            override fun getAccounts(): LiveData<List<Account>?> = MutableLiveData()
+
+            override suspend fun getAccountByName(
+                name: String,
+                page: Int,
+                limit: Int
+            ): List<Account>? = emptyList()
+
+            override suspend fun saveAccounts(accounts: List<Account>) {
+            }
+
+            override suspend fun deletedAccounts() {
             }
         }
     }
@@ -33,8 +56,8 @@ class GetAccountsByNameUseCaseImplTest {
         val getAccountsByNameUseCaseImpl = GetAccountsByNameUseCaseImpl(mockEmptyRepository)
 
         runBlocking {
-            val result = getAccountsByNameUseCaseImpl.getAccounts("")
-            assert(result.isEmpty())
+            val result = getAccountsByNameUseCaseImpl.getAccounts("", 1)
+            assert(result?.isEmpty() == true)
         }
     }
 
@@ -43,9 +66,9 @@ class GetAccountsByNameUseCaseImplTest {
         val getAccountsByNameUseCaseImpl = GetAccountsByNameUseCaseImpl(mockRepository)
 
         runBlocking {
-            val result = getAccountsByNameUseCaseImpl.getAccounts("john")
-            assert(result.isNotEmpty())
-            assert(result.size == 5)
+            val result = getAccountsByNameUseCaseImpl.getAccounts("john", 1)
+            assert(result?.isNotEmpty() == true)
+            assert(result?.size == 5)
         }
     }
 }
