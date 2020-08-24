@@ -2,25 +2,25 @@ package com.fanjavaid.github_explorer_android.viewmodels
 
 import androidx.lifecycle.*
 import com.fanjavaid.github_explorer_android.data.model.Account
-import com.fanjavaid.github_explorer_android.usecases.GetAccountsByNameUseCase
-import com.fanjavaid.github_explorer_android.usecases.GetAccountsUseCase
+import com.fanjavaid.github_explorer_android.usecases.GetAccountsByName
+import com.fanjavaid.github_explorer_android.usecases.GetCacheAccounts
 import kotlinx.coroutines.launch
 
 /**
  * Created by Fandi Akhmad (fanjavaid) on 18/08/20.
  */
 class GetAccountViewModel(
-    getAccountsUseCase: GetAccountsUseCase,
-    private val getAccountsByNameUseCase: GetAccountsByNameUseCase
+    getCacheAccounts: GetCacheAccounts,
+    private val getAccountsByName: GetAccountsByName
 ) : ViewModel() {
     private val searchQuery = MutableLiveData<SearchQuery>()
 
-    val cachedAccounts: LiveData<List<Account>?> = getAccountsUseCase.getAccounts()
+    val cachedAccounts: LiveData<List<Account>?> = getCacheAccounts.getAccounts()
 
     val accounts: LiveData<List<Account>> = searchQuery.switchMap { query ->
         val results = MutableLiveData<List<Account>>()
         viewModelScope.launch {
-            val result = getAccountsByNameUseCase.getAccounts(query.name, query.page)
+            val result = getAccountsByName.getAccounts(query.name, query.page)
             results.value = result
         }
         results
@@ -33,11 +33,11 @@ class GetAccountViewModel(
 
 @Suppress("UNCHECKED_CAST")
 class GetAccountViewModelFactory(
-    private val getAccountsUseCase: GetAccountsUseCase,
-    private val getAccountsByNameUseCase: GetAccountsByNameUseCase
+    private val getCacheAccounts: GetCacheAccounts,
+    private val getAccountsByName: GetAccountsByName
 ) :
     ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-        return GetAccountViewModel(getAccountsUseCase, getAccountsByNameUseCase) as T
+        return GetAccountViewModel(getCacheAccounts, getAccountsByName) as T
     }
 }

@@ -38,14 +38,14 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
     private lateinit var viewModel: GetAccountViewModel
 
     // Repositories
-    private lateinit var accountRepository: AccountRepository
-    private lateinit var accountLocalRepository: AccountRepository
+    private lateinit var repository: AccountRepository
+    private lateinit var localRepository: AccountRepository
 
     // Use Cases
-    private lateinit var getAccountsUseCase: GetAccountsUseCase
-    private lateinit var getAccountsByNameUseCase: GetAccountsByNameUseCase
-    private lateinit var saveAccountsUseCase: SaveAccountsUseCase
-    private lateinit var deleteAccountsUseCase: DeleteAccountsUseCase
+    private lateinit var getCacheAccounts: GetCacheAccounts
+    private lateinit var getAccountsByName: GetAccountsByName
+    private lateinit var saveCacheAccounts: SaveCacheAccounts
+    private lateinit var deleteCacheAccounts: DeleteCacheAccounts
 
     // Local
     private lateinit var accountDao: AccountDao
@@ -119,24 +119,24 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
     }
 
     private fun initRepositories() {
-        accountLocalRepository = AccountLocalRepositoryImpl(accountDao)
-        accountRepository = AccountRemoteRepositoryImpl()
+        localRepository = AccountLocalRepositoryImpl(accountDao)
+        repository = AccountRemoteRepositoryImpl()
     }
 
     private fun initUseCases() {
         // local
-        saveAccountsUseCase = SaveLocalAccountUseCaseImpl(accountLocalRepository)
-        deleteAccountsUseCase = DeleteLocalAccountsUseCaseImpl(accountLocalRepository)
-        getAccountsUseCase = GetLocalAccountsUseCaseImpl(accountLocalRepository)
+        saveCacheAccounts = SaveCacheAccounts(localRepository)
+        deleteCacheAccounts = DeleteCacheAccounts(localRepository)
+        getCacheAccounts = GetCacheAccounts(localRepository)
 
         // network
-        getAccountsByNameUseCase = GetAccountsByNameUseCaseImpl(accountRepository)
+        getAccountsByName = GetAccountsByName(repository)
     }
 
     private fun initViewModel() {
         viewModel = ViewModelProvider(
             this,
-            GetAccountViewModelFactory(getAccountsUseCase, getAccountsByNameUseCase)
+            GetAccountViewModelFactory(getCacheAccounts, getAccountsByName)
         ).get(GetAccountViewModel::class.java)
     }
 
@@ -144,7 +144,7 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
         viewModel.accounts.observe(this@MainActivity, Observer {
             if (!it.isNullOrEmpty()) {
                 GlobalScope.launch {
-                    saveAccountsUseCase.saveAccounts(it)
+                    saveCacheAccounts.saveAccounts(it)
                 }
             }
 
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity(), LoadableView<List<Account>>, EmptyView
         // Reset state
         accountAdapter.accounts.clear()
         GlobalScope.launch(Dispatchers.Main) {
-            deleteAccountsUseCase.deleteAccounts()
+            deleteCacheAccounts.deleteAccounts()
         }
 
         // Start new search

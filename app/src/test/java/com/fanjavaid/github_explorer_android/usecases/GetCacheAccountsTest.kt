@@ -12,7 +12,7 @@ import org.junit.Test
 /**
  * Created by Fandi Akhmad (fanjavaid) on 20/08/20.
  */
-class GetAccountsByNameUseCaseImplTest {
+class GetCacheAccountsTest {
     private lateinit var mockRepository: AccountRepository
     private lateinit var mockEmptyRepository: AccountRepository
 
@@ -41,7 +41,7 @@ class GetAccountsByNameUseCaseImplTest {
                 name: String,
                 page: Int,
                 limit: Int
-            ): List<Account>? = emptyList()
+            ): List<Account>? = null
 
             override suspend fun saveAccounts(accounts: List<Account>) {
             }
@@ -53,20 +53,20 @@ class GetAccountsByNameUseCaseImplTest {
 
     @Test
     fun `Given an empty keyword When search account Then return empty results`() {
-        val getAccountsByNameUseCaseImpl = GetAccountsByNameUseCaseImpl(mockEmptyRepository)
+        val getAccountsByName = GetAccountsByName(mockEmptyRepository)
 
         runBlocking {
-            val result = getAccountsByNameUseCaseImpl.getAccounts("", 1)
-            assert(result?.isEmpty() == true)
+            val result = getAccountsByName.getAccounts("", 1)
+            assert(result == null)
         }
     }
 
     @Test
     fun `Given a keyword When search account Then return the results`() {
-        val getAccountsByNameUseCaseImpl = GetAccountsByNameUseCaseImpl(mockRepository)
+        val getAccountsByName = GetAccountsByName(mockRepository)
 
         runBlocking {
-            val result = getAccountsByNameUseCaseImpl.getAccounts("john", 1)
+            val result = getAccountsByName.getAccounts("john", 1)
             assert(result?.isNotEmpty() == true)
             assert(result?.size == 5)
         }
