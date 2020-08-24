@@ -24,3 +24,22 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+ext {
+    retrofitVer = "2.9.0"
+    glideVer = "4.11.0"
+    coroutinesVer = "1.3.9"
+    okHttpVer = "4.8.1"
+    lifecycleVer = "2.2.0"
+    roomVer = "2.2.5"
+    coreKtxVer = "1.3.1"
+    mockkVer = "1.10.0"
+    gsonVer = "2.8.6"
+    junitVer = "4.13"
+    junitExtVer = "1.1.1"
+    espressoVer = "3.2.0"
+    coreTestingVer = "2.1.0"
+    constraintLayoutVer = "1.1.3"
+    materialVer = "1.2.0"
+    appCompatVer = "1.2.0"
+}
